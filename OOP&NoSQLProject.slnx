@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="OOP&amp;NoSQL.Domain/OOP&amp;NoSQL.Domain.csproj" />
+  <Project Path="OOP&amp;NoSQL.Infrastructure/OOP&amp;NoSQL.Infrastructure.csproj" />
+  <Project Path="OOP&amp;NoSQLProject/OOP&amp;NoSQL.ConsoleApp.csproj" />
+</Solution>

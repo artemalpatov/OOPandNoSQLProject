@@ -8,4 +8,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\OOP&amp;NoSQL.Domain\OOP&amp;NoSQL.Domain.csproj" />
+    <ProjectReference Include="..\OOP&amp;NoSQL.Infrastructure\OOP&amp;NoSQL.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>

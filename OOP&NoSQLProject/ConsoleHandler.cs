@@ -1,8 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using OOP_NoSQL.Domain.Entities;
+﻿using OOP_NoSQL.Domain.Entities;
 using OOP_NoSQL.Domain.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
 
 namespace OOP_NoSQLProject
 {
@@ -21,25 +22,35 @@ namespace OOP_NoSQLProject
 
         public async Task DepositAsync()
         {
-            Console.Write("/nInput account number for deposit: ");
+            Console.Write("\nInput account number for deposit: ");
             string? accountNumber = Console.ReadLine();
             Console.Write("Input amount to deposit: ");
-            if (!decimal.TryParse(Console.ReadLine(), out decimal amount) || amount <= 0)
+            if (decimal.TryParse(Console.ReadLine()?.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amount) || amount <= 0)
             {
                 var tx = await _transactionService.DepositAsync(accountNumber ?? "", amount);
                 PrintTransactionResult(tx);
+            }
+            else
+            {
+                Console.WriteLine("Input is wrong");
+                Console.ReadLine();
             }
         }
 
         public async Task WithdrawAsync()
         {
-            Console.Write("/nInput account number for withdrawal: ");
+            Console.Write("\nInput account number for withdrawal: ");
             string? accountNumber = Console.ReadLine();
             Console.Write("Input amount to withdraw: ");
-            if (!decimal.TryParse(Console.ReadLine(), out decimal amount) || amount <= 0)
+            if (decimal.TryParse(Console.ReadLine()?.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amount) || amount <= 0)
             {
                 var tx = await _transactionService.WithdrawAsync(accountNumber ?? "", amount);
                 PrintTransactionResult(tx);
+            }
+            else
+            {
+                Console.WriteLine("Input is wrong");
+                Console.ReadLine();
             }
         }
 
@@ -50,10 +61,15 @@ namespace OOP_NoSQLProject
             Console.Write("Input destination account number for transfer: ");
             string? destinationAccountNumber = Console.ReadLine();
             Console.Write("Input amount to transfer: ");
-            if (!decimal.TryParse(Console.ReadLine(), out decimal amount) || amount <= 0)
+            if (decimal.TryParse(Console.ReadLine()?.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amount) || amount <= 0)
             {
                 var tx = await _transactionService.TransferAsync(sourceAccountNumber ?? "", destinationAccountNumber ?? "", amount);
                 PrintTransactionResult(tx);
+            }
+            else
+            {
+                Console.WriteLine("Input is wrong");
+                Console.ReadLine();
             }
         }
 
@@ -68,8 +84,8 @@ namespace OOP_NoSQLProject
             await _auditLogger.LogActivityAsync(account1.OwnerId.ToString(), "Monthly process applied.");
 
             Console.WriteLine("\nMonthly process applied succesfully.");
-            Console.WriteLine($"From Checking Account {account1.AccountNumber} New Balance: {account1.Balance:C}");
-            Console.WriteLine($"From Savings Account {account2.AccountNumber} New Balance: {account2.Balance:C}");
+            Console.WriteLine($"From Checking Account {account1.AccountNumber} New Balance: {account1.Balance} €");
+            Console.WriteLine($"From Savings Account {account2.AccountNumber} New Balance: {account2.Balance} €");
             Console.ReadLine();
         }
 
@@ -86,7 +102,7 @@ namespace OOP_NoSQLProject
             Console.WriteLine($"\nTransaction History for Account {accountNumber}:");
             foreach (var tx in transactions)
             {
-                Console.WriteLine($"- {tx.Timestamp}: {tx.Type} of {tx.Amount:C} - Status: {tx.Status}");
+                Console.WriteLine($"- {tx.Timestamp}: {tx.Type} of {tx.Amount} € - Status: {tx.Status}");
             }
             Console.ReadLine();
         }
@@ -95,7 +111,7 @@ namespace OOP_NoSQLProject
         {
             if (tx.Status == TransactionStatus.Completed)
             {
-                Console.WriteLine($"\nTransaction successful: {tx.Type} of {tx.Amount:C} is made.");
+                Console.WriteLine($"\nTransaction successful: {tx.Type} of {tx.Amount} € is made.");
             }
             else
             {

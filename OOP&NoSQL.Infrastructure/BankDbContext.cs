@@ -8,6 +8,7 @@ namespace OOP_NoSQL.Infrastructure
 {
     public class BankDbContext : DbContext
     {
+        public DbSet<User> Users { get; set; } = null!;
         public DbSet<BankAccount> Accounts { get; set; } = null!;
         public DbSet<Transaction> Transactions { get; set; } = null!;
 
@@ -27,6 +28,13 @@ namespace OOP_NoSQL.Infrastructure
 
             modelBuilder.Entity<BankAccount>()
                 .HasKey(a => a.AccountNumber);
+
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.Accounts)
+                .WithOne()
+                .HasForeignKey(a => a.OwnerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
         }
     }
 }

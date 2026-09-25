@@ -10,6 +10,13 @@ namespace OOP_NoSQL.Infrastructure
     {
         private readonly List<BankAccount> _accounts = new();
 
+        public Task<User?> GetUserByEmailAsync(string email)
+        {
+            // In a real implementation, you would query the database for the user by email.
+            // Since this is an in-memory repository, we will return null for demonstration purposes.
+            return Task.FromResult<User?>(null);
+        }
+
         public Task<BankAccount?> GetByAccountNumberAsync(string accountNumber)
         {
             var account = _accounts.FirstOrDefault(a => a.AccountNumber == accountNumber);

@@ -10,6 +10,8 @@ namespace OOP_NoSQL.Domain.Entities
         public string FullName { get; private set; }
         public string Email { get; private set; }
         public string PasswordHash { get; private set; }
+
+        public bool IsLoggedIn { get; set; } = false;
         private readonly List<BankAccount> _accounts = new();
         public IReadOnlyCollection<BankAccount> Accounts => _accounts.AsReadOnly();
 

@@ -15,24 +15,29 @@ namespace OOP_NoSQL.ConsoleApp
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             Console.Title = "Banking System";
 
-            IAccountRepository accountRepository = new InMemoryAccountRepository();
+            using var DbContext = new BankDbContext();
+            IAccountRepository accountRepository = new SqlAccountRepository(DbContext);
             IAuditLogger auditLogger = new MongoAuditLogger("mongodb://localhost:27017", "BankingAuditDb");
             ITransactionService transactionService = new TransactionService(accountRepository, auditLogger);
 
             var Handler = new ConsoleHandler(transactionService, accountRepository, auditLogger);
 
-            var user = new User("Artem Alpatov", "artem@example.com", "hash_password123");
+           
+            var user = await Handler.UserAccessAsync();
+            if (user == null)
+            {
+                Console.WriteLine("Failed to access user account.");
+                return;
+            }
 
-            var checking = new CheckingAccount("ACC-1001", user.Id, initialBalance: 500m, overdraftLimit: 200m);
-            var savings = new SavingsAccount("ACC-1002", user.Id, initialBalance: 1000m, interestRate: 0.05m);
+            var (checking, savings) = await Handler.CreateAccountsAsync(user);
+            if (checking == null || savings == null)
+            {
+                Console.WriteLine("Failed to create accounts.");
+                return;
+            }
 
-            user.AddAccount(checking);
-            user.AddAccount(savings);
-
-            await accountRepository.AddAccountAsync(checking);
-            await accountRepository.AddAccountAsync(savings);
-
-            await auditLogger.LogActivityAsync(user.Id.ToString(), "User created", new { user.FullName, user.Email });
+            
 
             while (true)
             {
@@ -48,6 +53,7 @@ namespace OOP_NoSQL.ConsoleApp
                 Console.WriteLine(" 3. Transfer Funds Between Accounts");
                 Console.WriteLine(" 4. Apply Monthly Process");
                 Console.WriteLine(" 5. View Transaction History");
+                Console.WriteLine(" 9. Log out");
                 Console.WriteLine(" 0. Exit");
                 Console.WriteLine("==================================================");
                 Console.Write("Choose an action: ");
@@ -70,6 +76,21 @@ namespace OOP_NoSQL.ConsoleApp
                         break;
                     case "5":   
                         await Handler.HistoryAsync();
+                        break;
+                    case "9":
+                        Console.WriteLine("Logging out...");
+                        user = await Handler.UserAccessAsync();
+                        if (user == null)
+                        {
+                            Console.WriteLine("Failed to access user account.");
+                            return;
+                        }
+                        (checking, savings) = await Handler.CreateAccountsAsync(user);
+                        if (checking == null || savings == null)
+                        {
+                            Console.WriteLine("Failed to create accounts.");
+                            return;
+                        }
                         break;
                     case "0":
                         Console.WriteLine("Exiting the application...");

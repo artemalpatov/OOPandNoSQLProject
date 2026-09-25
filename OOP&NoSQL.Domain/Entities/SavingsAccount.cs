@@ -8,6 +8,8 @@ namespace OOP_NoSQL.Domain.Entities
     {
         public decimal InterestRate { get; private set; }
 
+        protected SavingsAccount() : base() { } // For EF Core
+
         public SavingsAccount(
             string accountNumber,
             Guid ownerId,

@@ -17,6 +17,12 @@ namespace OOP_NoSQL.Infrastructure
             _db.Database.EnsureCreated();
         }
 
+        public async Task AddUserAsync(User user)
+        {
+            await _db.Users.AddAsync(user);
+            await _db.SaveChangesAsync();
+        }
+
         public async Task<User?> GetUserByEmailAsync(string email)
         {
             return await _db.Users.FirstOrDefaultAsync(u => u.Email == email);

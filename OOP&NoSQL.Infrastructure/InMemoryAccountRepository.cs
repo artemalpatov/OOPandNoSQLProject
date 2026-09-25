@@ -41,5 +41,12 @@ namespace OOP_NoSQL.Infrastructure
             return Task.CompletedTask;
         }
 
+        public Task AddUserAsync(User user)
+        {
+            // In a real implementation, you would add the user to the database.
+            // Since this is an in-memory repository, we will do nothing for demonstration purposes.
+            return Task.CompletedTask;
+        }
+
     }
 }

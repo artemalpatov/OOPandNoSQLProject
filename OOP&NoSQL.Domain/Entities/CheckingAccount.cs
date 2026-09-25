@@ -9,6 +9,8 @@ namespace OOP_NoSQL.Domain.Entities
         public decimal OverdraftLimit { get; private set; }
         public decimal MonthlyFee { get; private set; }
 
+        protected CheckingAccount() : base() { } // For EF Core
+
         public CheckingAccount(
             string accountNumber,
             Guid ownerId,

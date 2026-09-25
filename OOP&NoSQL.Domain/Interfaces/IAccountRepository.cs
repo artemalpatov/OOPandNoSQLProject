@@ -7,6 +7,7 @@ namespace OOP_NoSQL.Domain.Interfaces
 {
     public interface IAccountRepository
     {
+        Task AddUserAsync(User user);
         Task<User?> GetUserByEmailAsync(string email);
         Task<BankAccount?> GetByAccountNumberAsync(string accountNumber);
         Task<IEnumerable<BankAccount>> GetAccountByUserIdAsync(Guid userId);

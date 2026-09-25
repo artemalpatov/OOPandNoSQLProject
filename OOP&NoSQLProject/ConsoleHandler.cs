@@ -144,6 +144,7 @@ namespace OOP_NoSQLProject
 
                     var newUser = new User(fullName ?? "", newEmail ?? "", newPassword ?? "");
                     newUser.IsLoggedIn = true;
+                    await _accountRepository.AddUserAsync(newUser);
                     await _auditLogger.LogActivityAsync(newUser.Id.ToString(), "User created", new { newUser.FullName, newUser.Email });
                     return newUser;
                 case "2":
@@ -181,7 +182,7 @@ namespace OOP_NoSQLProject
             Console.WriteLine("Creating Checking and Savings Accounts for the user...");
             Console.WriteLine("1. Create Checking Account");
             Console.WriteLine("2. Create Savings Account");
-            Console.WriteLine("")
+            Console.WriteLine("");
             Console.WriteLine("================================");
 
             var choice = Console.ReadLine();

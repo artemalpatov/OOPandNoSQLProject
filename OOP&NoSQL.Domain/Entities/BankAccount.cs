@@ -17,6 +17,8 @@ namespace OOP_NoSQL.Domain.Entities
             protected set  => _balance = value;
         }
 
+        protected BankAccount() { } // For EF Core
+
         protected BankAccount(string accountNumber, Guid ownerId, decimal initialBalance)
         {
             if (initialBalance < 0)

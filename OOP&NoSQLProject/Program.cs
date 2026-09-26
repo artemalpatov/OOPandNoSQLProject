@@ -22,21 +22,34 @@ namespace OOP_NoSQL.ConsoleApp
 
             var Handler = new ConsoleHandler(transactionService, accountRepository, auditLogger);
 
-           
-            var user = await Handler.UserAccessAsync();
-            if (user == null)
+            User? user = null;
+
+            string? savedEmail = await SessionManager.GetSavedSessionEmailAsync();
+            if (!string.IsNullOrWhiteSpace(savedEmail))
             {
-                Console.WriteLine("Failed to access user account.");
-                return;
+                user = await accountRepository.GetUserByEmailAsync(savedEmail);
+                if (user != null)
+                {
+                    Console.WriteLine($"Welcome Back, {user.FullName}");
+                }
             }
 
-            var (checking, savings) = await Handler.CreateAccountsAsync(user);
-            if (checking == null || savings == null)
+            while (user == null)
             {
-                Console.WriteLine("Failed to create accounts.");
-                return;
+                Console.Clear();
+                user = await Handler.UserAccessAsync();
             }
 
+            var existingAccount = (await accountRepository.GetAccountByUserIdAsync(user.Id)).ToList();
+
+            CheckingAccount? checking = existingAccount.OfType<CheckingAccount>().FirstOrDefault();
+            SavingsAccount? savings = existingAccount.OfType<SavingsAccount>().FirstOrDefault();
+
+            if (checking == null && savings == null)
+            {
+                Console.WriteLine("\nNo Active Accounts. Let's Create The First Account");
+                var created = await Handler.CreateAccountsAsync(user);
+            }
             
 
             while (true)
@@ -45,20 +58,21 @@ namespace OOP_NoSQL.ConsoleApp
                 Console.WriteLine("==================================================");
                 Console.WriteLine($"  Bank System | Client: {user.FullName}");
                 Console.WriteLine("==================================================");
-                Console.WriteLine($" 1. Checking Account [{checking.AccountNumber}]: {checking.Balance:F2} € (Overdraft Limit: {checking.OverdraftLimit:F2} €)");
-                Console.WriteLine($" 2. Savings Account [{savings.AccountNumber}]: {savings.Balance:F2} € (Rate: {savings.InterestRate * 100}%)");
+                Console.WriteLine(checking != null ? $" Checking Account [{checking.AccountNumber}]: {checking.Balance:F2} € (Overdraft Limit: {checking.OverdraftLimit:F2} €)" : " No Checking Account");
+                Console.WriteLine(savings != null ? $" Savings Account [{savings.AccountNumber}]: {savings.Balance:F2} € (Rate: {savings.InterestRate * 100}%)" : " No Savings Account");
                 Console.WriteLine("--------------------------------------------------");
                 Console.WriteLine(" 1. Deposit Funds");
                 Console.WriteLine(" 2. Withdraw Cash");
                 Console.WriteLine(" 3. Transfer Funds Between Accounts");
                 Console.WriteLine(" 4. Apply Monthly Process");
                 Console.WriteLine(" 5. View Transaction History");
+                Console.WriteLine(" 6. Create One More Account");
                 Console.WriteLine(" 9. Log out");
                 Console.WriteLine(" 0. Exit");
                 Console.WriteLine("==================================================");
                 Console.Write("Choose an action: ");
 
-                string? choice = Console.ReadLine();
+                string? choice = Console.ReadLine() ?? "";
 
                 switch (choice)
                 {
@@ -72,13 +86,19 @@ namespace OOP_NoSQL.ConsoleApp
                         await Handler.TransferAsync();
                         break;
                     case "4":
-                        await Handler.MonthlyProcessAsync(checking, savings);
+                        await Handler.MonthlyProcessAsync(checking);
+                        await Handler.MonthlyProcessAsync(savings);
                         break;
                     case "5":   
                         await Handler.HistoryAsync();
                         break;
+                    case "6":
+                        (checking, savings) = await Handler.CreateAccountsAsync(user);
+                        break;
                     case "9":
+                        SessionManager.ClearSession();
                         Console.WriteLine("Logging out...");
+                        Console.Clear();
                         user = await Handler.UserAccessAsync();
                         if (user == null)
                         {
@@ -86,11 +106,6 @@ namespace OOP_NoSQL.ConsoleApp
                             return;
                         }
                         (checking, savings) = await Handler.CreateAccountsAsync(user);
-                        if (checking == null || savings == null)
-                        {
-                            Console.WriteLine("Failed to create accounts.");
-                            return;
-                        }
                         break;
                     case "0":
                         Console.WriteLine("Exiting the application...");

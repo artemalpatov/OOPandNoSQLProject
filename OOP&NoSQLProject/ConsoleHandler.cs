@@ -74,19 +74,16 @@ namespace OOP_NoSQLProject
             }
         }
 
-        public async Task MonthlyProcessAsync(BankAccount account1, BankAccount account2)
+        public async Task MonthlyProcessAsync(BankAccount account1)
         {
             account1.ApplyMonthlyProcess();
-            account2.ApplyMonthlyProcess();
 
             await _accountRepository.UpdateAccountAsync(account1);
-            await _accountRepository.UpdateAccountAsync(account2);
 
-            await _auditLogger.LogActivityAsync(account1.OwnerId.ToString(), "Monthly process applied.");
+            await _auditLogger.LogActivityAsync(account1.OwnerId.ToString(), $"Monthly process applied for account {account1.AccountNumber}.");
 
             Console.WriteLine("\nMonthly process applied succesfully.");
             Console.WriteLine($"From Checking Account {account1.AccountNumber} New Balance: {account1.Balance} €");
-            Console.WriteLine($"From Savings Account {account2.AccountNumber} New Balance: {account2.Balance} €");
             Console.ReadLine();
         }
 
@@ -143,9 +140,9 @@ namespace OOP_NoSQLProject
                     var newPassword = Console.ReadLine();
 
                     var newUser = new User(fullName ?? "", newEmail ?? "", newPassword ?? "");
-                    newUser.IsLoggedIn = true;
                     await _accountRepository.AddUserAsync(newUser);
                     await _auditLogger.LogActivityAsync(newUser.Id.ToString(), "User created", new { newUser.FullName, newUser.Email });
+                    await SessionManager.SaveSessionAsync(newUser.Email);
                     return newUser;
                 case "2":
                     Console.Write("Please enter your email: ");
@@ -156,9 +153,8 @@ namespace OOP_NoSQLProject
                     var user = await _accountRepository.GetUserByEmailAsync(email ?? "");
                     if (user != null)
                     {
-                        user.IsLoggedIn = true;
                         await _auditLogger.LogActivityAsync(user.Id.ToString(), "User logged in", new { user.FullName, user.Email });
-
+                        await SessionManager.SaveSessionAsync(user.Email);
                         return user;
                     }
                     else
@@ -179,33 +175,89 @@ namespace OOP_NoSQLProject
 
         public async Task<(CheckingAccount?, SavingsAccount?)> CreateAccountsAsync(User user)
         {
-            Console.WriteLine("Creating Checking and Savings Accounts for the user...");
-            Console.WriteLine("1. Create Checking Account");
-            Console.WriteLine("2. Create Savings Account");
-            Console.WriteLine("");
-            Console.WriteLine("================================");
-
-            var choice = Console.ReadLine();
+            CheckingAccount? checkingAccount = null;
+            SavingsAccount? savingsAccount = null;
 
             string accountSuffix = user.Id.ToString().Replace("-", "").Substring(0, 4).ToUpper();
 
-            switch (choice)
+            while (true)
             {
-                case "1":
-                    var checkingAccount = new CheckingAccount($"C-{accountSuffix}", user.Id, initialBalance: 100m, overdraftLimit: 200m);
-                    await _accountRepository.AddAccountAsync(checkingAccount);
-                    await _auditLogger.LogActivityAsync(user.Id.ToString(), "Checking account created", new { checkingAccount.AccountNumber });
-                    Console.WriteLine($"Checking account created with account number: {checkingAccount.AccountNumber}");
-                    return (checkingAccount, null);
-                case "2":
-                    var savingsAccount = new SavingsAccount($"S-{accountSuffix}", user.Id, initialBalance: 100m, interestRate: 0.05m);
-                    await _accountRepository.AddAccountAsync(savingsAccount);
-                    await _auditLogger.LogActivityAsync(user.Id.ToString(), "Savings account created", new { savingsAccount.AccountNumber });
-                    Console.WriteLine($"Savings account created with account number: {savingsAccount.AccountNumber}");
-                    return (null, savingsAccount);
-                default:
-                    Console.WriteLine("Invalid choice. Please try again.");
-                    return (null, null);
+                var existingAccounts = await _accountRepository.GetAccountByUserIdAsync(user.Id);
+
+                bool hasChecking = existingAccounts.OfType<CheckingAccount>().Any() || checkingAccount != null;
+                bool hasSavings = existingAccounts.OfType<SavingsAccount>().Any() || savingsAccount != null;
+
+                Console.Clear();
+                Console.WriteLine($"=== Manage Accounts for {user.FullName} ===");
+                Console.WriteLine(hasChecking ? "1. [CREATED] Checking Account" : "1. Create Checking Account");
+                Console.WriteLine(hasSavings ? "2. [CREATED] Savings Account" : "2. Create Savings Account");
+                Console.WriteLine("3. Done & Continue to Main Menu");
+                Console.WriteLine("0. Exit Application");
+                Console.WriteLine("=======================================");
+                Console.Write("Choose an action: ");
+
+                var choice = Console.ReadLine() ?? "";
+
+                switch (choice)
+                {
+                    case "1":
+                        if (hasChecking)
+                        {
+                            Console.WriteLine("You already have a Checking Account. Please choose another option.");
+                            Console.ReadLine();
+                            break;
+                        }   
+
+
+                        var createdChecking = new CheckingAccount($"C-{accountSuffix}", user.Id, initialBalance: 100m, overdraftLimit: 200m);
+                        await _accountRepository.AddAccountAsync(createdChecking);
+                        await _auditLogger.LogActivityAsync(user.Id.ToString(), "Checking account created", new { createdChecking.AccountNumber });
+
+                        Console.WriteLine($"Checking account created with account number: {createdChecking.AccountNumber}");
+                        Console.WriteLine("Press any key to continue...");
+                        Console.ReadLine();
+                        break;
+                    case "2":
+                        if (hasSavings)
+                        {
+                            Console.WriteLine("You already have a Savings Account. Please choose another option.");
+                            Console.ReadLine();
+                            break;
+                        }
+
+                        var createdSavings = new SavingsAccount($"S-{accountSuffix}", user.Id, initialBalance: 100m, interestRate: 0.05m);
+                        await _accountRepository.AddAccountAsync(createdSavings);
+                        await _auditLogger.LogActivityAsync(user.Id.ToString(), "Savings account created", new { createdSavings.AccountNumber });
+
+                        Console.WriteLine($"Savings account created with account number: {createdSavings.AccountNumber}");
+                        Console.WriteLine("Press any key to continue...");
+                        Console.ReadLine();
+                        break;
+
+                    case "3":
+                        var allUserAccounts = (await _accountRepository.GetAccountByUserIdAsync(user.Id)).ToList();
+
+                        if (!allUserAccounts.Any())
+                        {
+                            Console.WriteLine("You must create at least one account before proceeding.");
+                            Console.ReadLine();
+                            break;
+                        }
+
+                        var finalCheckingAccount = allUserAccounts.OfType<CheckingAccount>().FirstOrDefault() ?? checkingAccount;
+                        var finalSavingsAccount = allUserAccounts.OfType<SavingsAccount>().FirstOrDefault() ?? savingsAccount;
+                         
+                        return (finalCheckingAccount, finalSavingsAccount);
+
+
+                    case "0":
+                        Console.WriteLine("Exiting the application. Goodbye!");
+                        Environment.Exit(0);
+                        return (null, null);
+                    default:
+                        Console.WriteLine("Invalid choice. Please try again.");
+                        return (null, null);
+                }
             }
         }
     }

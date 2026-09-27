@@ -48,6 +48,7 @@ namespace OOP_NoSQL.ConsoleApp
             if (checking == null && savings == null)
             {
                 Console.WriteLine("\nNo Active Accounts. Let's Create The First Account");
+                Console.ReadLine();
                 var created = await Handler.CreateAccountsAsync(user);
             }
             
@@ -86,8 +87,8 @@ namespace OOP_NoSQL.ConsoleApp
                         await Handler.TransferAsync();
                         break;
                     case "4":
-                        await Handler.MonthlyProcessAsync(checking);
-                        await Handler.MonthlyProcessAsync(savings);
+                        if (checking != null) await Handler.MonthlyProcessAsync(checking);
+                        if (savings != null) await Handler.MonthlyProcessAsync(savings);
                         break;
                     case "5":   
                         await Handler.HistoryAsync();
@@ -100,12 +101,13 @@ namespace OOP_NoSQL.ConsoleApp
                         Console.WriteLine("Logging out...");
                         Console.Clear();
                         user = await Handler.UserAccessAsync();
-                        if (user == null)
+                        while(user == null)
                         {
-                            Console.WriteLine("Failed to access user account.");
-                            return;
+                            Console.Clear();
+                            user = await Handler.UserAccessAsync();
                         }
                         (checking, savings) = await Handler.CreateAccountsAsync(user);
+                       
                         break;
                     case "0":
                         Console.WriteLine("Exiting the application...");

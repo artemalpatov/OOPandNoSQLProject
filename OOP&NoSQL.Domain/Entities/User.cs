@@ -6,13 +6,15 @@ namespace OOP_NoSQL.Domain.Entities
 {
     public class User
     {
-        public Guid Id { get; private set; }
-        public string FullName { get; private set; }
-        public string Email { get; private set; }
-        public string PasswordHash { get; private set; }
+        public Guid Id { get; private set; } = Guid.NewGuid();
+        public string FullName { get; private set; } = string.Empty;
+        public string Email { get; private set; } = string.Empty;
+        public string PasswordHash { get; private set; } = string.Empty;
 
         private readonly List<BankAccount> _accounts = new();
         public IReadOnlyCollection<BankAccount> Accounts => _accounts.AsReadOnly();
+
+        protected User() {}
 
         public User(string fullName, string email, string passwordHash)
         {

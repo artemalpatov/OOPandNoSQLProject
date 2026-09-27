@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace OOP_NoSQLProject
 {
@@ -134,12 +135,37 @@ namespace OOP_NoSQLProject
                 case "1":
                     Console.WriteLine("Please enter your full name: ");
                     var fullName = Console.ReadLine();
+                    if (fullName == null || fullName.Length <= 3 || fullName.Length >= 15)
+                    {
+                        Console.WriteLine("Name must be between 3 and 15 symbols. Please try again.");
+                        Console.ReadLine();
+                        return null;
+                    }
                     Console.Write("Please enter your email: ");
-                    var newEmail = Console.ReadLine();
+                    var newEmail = Console.ReadLine()?.Trim() ?? "";
+                    if (!Regex.IsMatch(newEmail, @"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase))
+                    {
+                        Console.WriteLine("You need to input valid email format. Please try again.");
+                        Console.ReadLine();
+                        return null;
+                    }
+                    var existingUser = await _accountRepository.GetUserByEmailAsync(newEmail ?? "");
+                    if (existingUser != null)
+                    {
+                        Console.WriteLine("User with this email already exists. Please try again.");
+                        Console.ReadLine();
+                        return null;
+                    }
                     Console.Write("Please enter your password: ");
-                    var newPassword = Console.ReadLine();
+                    var newPassword = Console.ReadLine()?.Trim();
+                    if (newPassword == null || newPassword == "")
+                    {
+                        Console.WriteLine("You need to set password. Please try again.");
+                        Console.ReadLine();
+                        return null;
+                    }
 
-                    var newUser = new User(fullName ?? "", newEmail ?? "", newPassword ?? "");
+                    var newUser = new User(fullName, newEmail ?? "", newPassword);
                     await _accountRepository.AddUserAsync(newUser);
                     await _auditLogger.LogActivityAsync(newUser.Id.ToString(), "User created", new { newUser.FullName, newUser.Email });
                     await SessionManager.SaveSessionAsync(newUser.Email);
@@ -147,19 +173,33 @@ namespace OOP_NoSQLProject
                 case "2":
                     Console.Write("Please enter your email: ");
                     var email = Console.ReadLine();
+                    var emailExists = await _accountRepository.GetUserByEmailAsync(email ?? "");
+                    if (emailExists == null)
+                    {
+                        Console.WriteLine("There are no users with this email. Please try again.");
+                        Console.ReadLine();
+                        return null;
+                    }
                     Console.Write("Please enter your password: ");
                     var password = Console.ReadLine();
 
                     var user = await _accountRepository.GetUserByEmailAsync(email ?? "");
-                    if (user != null)
+                    if (user != null && password == user.PasswordHash)
                     {
                         await _auditLogger.LogActivityAsync(user.Id.ToString(), "User logged in", new { user.FullName, user.Email });
                         await SessionManager.SaveSessionAsync(user.Email);
                         return user;
                     }
+                    else if (user != null)
+                    {
+                        Console.WriteLine("Password is wrong. Please try again.");
+                        Console.ReadLine();
+                        return null;
+                    }
                     else
                     {
                         Console.WriteLine("User not found. Please try again.");
+                        Console.ReadLine();
                         return null;
                     }
                 case "0":

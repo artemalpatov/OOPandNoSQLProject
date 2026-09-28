@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
 using OOP_NoSQL.Domain.Entities;
 using OOP_NoSQL.Domain.Interfaces;
 
@@ -11,12 +12,13 @@ namespace OOP_NoSQL.Infrastructure
     {
         private readonly IAccountRepository _accountRepository;
         private readonly IAuditLogger _auditLogger;
-        private readonly List<Transaction> _transactions = new();
+        private readonly BankDbContext _db;
 
-        public TransactionService(IAccountRepository accountRepository, IAuditLogger auditLogger)
+        public TransactionService(IAccountRepository accountRepository, IAuditLogger auditLogger, BankDbContext db)
         {
             _accountRepository = accountRepository ?? throw new ArgumentNullException(nameof(accountRepository));
             _auditLogger = auditLogger ?? throw new ArgumentNullException(nameof(auditLogger));
+            _db = db ?? throw new ArgumentNullException(nameof(db));
         }
 
         public async Task<Transaction> DepositAsync(string accountNumber, decimal amount)
@@ -38,7 +40,8 @@ namespace OOP_NoSQL.Infrastructure
                 await _accountRepository.UpdateAccountAsync(account);
 
                 transaction.MarkAsCompleted();
-                _transactions.Add(transaction);
+                await _db.Transactions.AddAsync(transaction);
+                await _db.SaveChangesAsync();
 
                 await _auditLogger.LogActivityAsync(
                     account.OwnerId.ToString(),
@@ -84,7 +87,8 @@ namespace OOP_NoSQL.Infrastructure
                 await _accountRepository.UpdateAccountAsync(account);
 
                 transaction.MarkAsCompleted();
-                _transactions.Add(transaction);
+                await _db.Transactions.AddAsync(transaction);
+                await _db.SaveChangesAsync();
 
                 await _auditLogger.LogActivityAsync(
                     account.OwnerId.ToString(),
@@ -142,7 +146,8 @@ namespace OOP_NoSQL.Infrastructure
                 await _accountRepository.UpdateAccountAsync(toAccount);
 
                 transaction.MarkAsCompleted();
-                _transactions.Add(transaction);
+                await _db.Transactions.AddAsync(transaction);
+                await _db.SaveChangesAsync();
 
                 await _auditLogger.LogActivityAsync(
                     fromAccount.OwnerId.ToString(),
@@ -159,10 +164,12 @@ namespace OOP_NoSQL.Infrastructure
             }
         }
 
-        public Task<IEnumerable<Transaction>> GetTransactionsHistoryAsync(string accountNumber)
+        public async Task<IEnumerable<Transaction>> GetTransactionsHistoryAsync(string accountNumber)
         {
-            var accountTransactions = _transactions.FindAll(t => t.FromAccountNumber == accountNumber || t.ToAccountNumber == accountNumber);
-            return Task.FromResult<IEnumerable<Transaction>>(accountTransactions);
+            return await _db.Transactions
+                .Where(t => t.FromAccountNumber == accountNumber || t.ToAccountNumber == accountNumber)
+                .OrderByDescending(t => t.Timestamp)
+                .ToListAsync();
         }
     }
 }

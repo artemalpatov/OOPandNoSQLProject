@@ -18,7 +18,7 @@ namespace OOP_NoSQL.ConsoleApp
             using var DbContext = new BankDbContext();
             IAccountRepository accountRepository = new SqlAccountRepository(DbContext);
             IAuditLogger auditLogger = new MongoAuditLogger("mongodb://localhost:27017", "BankingAuditDb");
-            ITransactionService transactionService = new TransactionService(accountRepository, auditLogger);
+            ITransactionService transactionService = new TransactionService(accountRepository, auditLogger, DbContext);
 
             var Handler = new ConsoleHandler(transactionService, accountRepository, auditLogger);
 

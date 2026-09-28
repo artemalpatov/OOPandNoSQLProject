@@ -24,49 +24,74 @@ namespace OOP_NoSQLProject
 
         public async Task DepositAsync()
         {
-            Console.Write("\nInput account number for deposit: ");
-            string? accountNumber = Console.ReadLine();
-            Console.Write("Input amount to deposit: ");
-            if (decimal.TryParse(Console.ReadLine()?.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amount) || amount <= 0)
+            Console.Write("Input account number for deposit: ");
+            string? accountNumber = Console.ReadLine() ?? "";
+            var account = await _accountRepository.GetByAccountNumberAsync(accountNumber);
+            if (account == null)
             {
-                var tx = await _transactionService.DepositAsync(accountNumber ?? "", amount);
+                Console.WriteLine("\nAccount not found.");
+                Console.ReadLine();
+                return;
+            }
+
+            Console.Write("Input amount to deposit: ");
+            string inputAmount = Console.ReadLine()?.Replace(',', '.') ?? "";
+
+            if (decimal.TryParse(inputAmount, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amount) && amount > 0)
+            {
+                var tx = await _transactionService.DepositAsync(accountNumber, amount);
                 PrintTransactionResult(tx);
             }
             else
             {
-                Console.WriteLine("Input is wrong");
+                Console.WriteLine("\nInvalid amount. Amount must be greater than 0.");
                 Console.ReadLine();
             }
         }
 
         public async Task WithdrawAsync()
         {
-            Console.Write("\nInput account number for withdrawal: ");
-            string? accountNumber = Console.ReadLine();
-            Console.Write("Input amount to withdraw: ");
-            if (decimal.TryParse(Console.ReadLine()?.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amount) || amount <= 0)
-            {
-                var tx = await _transactionService.WithdrawAsync(accountNumber ?? "", amount);
-                PrintTransactionResult(tx);
-            }
-            else
+            Console.Write("Input account number for withdrawal: ");
+            string? accountNumber = Console.ReadLine() ?? "";
+            var account = await _accountRepository.GetByAccountNumberAsync(accountNumber);
+            if (account == null)
             {
                 Console.WriteLine("Input is wrong");
                 Console.ReadLine();
+                return;
+            }
+            else
+            {
+                Console.Write("Input amount to withdraw: ");
+                if (decimal.TryParse(Console.ReadLine()?.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amount) || amount <= 0)
+                {
+                    var tx = await _transactionService.WithdrawAsync(accountNumber ?? "", amount);
+                    PrintTransactionResult(tx);
+                }
+                else
+                {
+                    Console.WriteLine("Input is wrong");
+                    Console.ReadLine();
+                }
             }
         }
 
         public async Task TransferAsync()
         {
-            Console.Write("\nInput source account number for transfer: ");
-            string? sourceAccountNumber = Console.ReadLine();
+            Console.Write("Input source account number for transfer: ");
+            string? sourceAccountNumber = Console.ReadLine() ?? "";
             Console.Write("Input destination account number for transfer: ");
-            string? destinationAccountNumber = Console.ReadLine();
-            Console.Write("Input amount to transfer: ");
-            if (decimal.TryParse(Console.ReadLine()?.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amount) || amount <= 0)
+            string? destinationAccountNumber = Console.ReadLine() ?? "";
+            var sourceAccount = await _accountRepository.GetByAccountNumberAsync(sourceAccountNumber);
+            var destinationAccount = await _accountRepository.GetByAccountNumberAsync(destinationAccountNumber);
+            if (sourceAccount != null && destinationAccount != null)
             {
-                var tx = await _transactionService.TransferAsync(sourceAccountNumber ?? "", destinationAccountNumber ?? "", amount);
-                PrintTransactionResult(tx);
+                Console.Write("Input amount to transfer: ");
+                if (decimal.TryParse(Console.ReadLine()?.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out decimal amount) || amount <= 0)
+                {
+                    var tx = await _transactionService.TransferAsync(sourceAccountNumber ?? "", destinationAccountNumber ?? "", amount);
+                    PrintTransactionResult(tx);
+                }
             }
             else
             {
@@ -90,12 +115,14 @@ namespace OOP_NoSQLProject
 
         public async Task HistoryAsync()
         {
-            Console.Write("\nInput account number to view transaction history: ");
-            string? accountNumber = Console.ReadLine();
-            var transactions = await _transactionService.GetTransactionsHistoryAsync(accountNumber ?? "");
+            Console.Write("Input account number to view transaction history: ");
+            string? accountNumber = Console.ReadLine()?.Trim() ?? "";
+
+            var transactions = await _transactionService.GetTransactionsHistoryAsync(accountNumber);
             if (transactions == null || !transactions.Any())
             {
                 Console.WriteLine("No transactions found for this account.");
+                Console.ReadLine();
                 return;
             }
             Console.WriteLine($"\nTransaction History for Account {accountNumber}:");
@@ -209,6 +236,7 @@ namespace OOP_NoSQLProject
 
                 default:
                     Console.WriteLine("Invalid choice. Please try again.");
+                    Console.ReadLine();
                     return null;
             }
         }
@@ -296,6 +324,7 @@ namespace OOP_NoSQLProject
                         return (null, null);
                     default:
                         Console.WriteLine("Invalid choice. Please try again.");
+                        Console.ReadLine();
                         return (null, null);
                 }
             }

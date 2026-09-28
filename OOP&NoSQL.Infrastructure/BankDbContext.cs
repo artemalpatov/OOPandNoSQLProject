@@ -35,6 +35,11 @@ namespace OOP_NoSQL.Infrastructure
                 .HasForeignKey(a => a.OwnerId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<Transaction>(entity =>
+            {
+                entity.HasKey(t => t.Id);
+                entity.Property(t => t.Amount).HasConversion<double>(); 
+            });
         }
     }
 }

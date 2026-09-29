@@ -27,7 +27,9 @@ namespace OOP_NoSQL.Domain.Entities
         public DateTime Timestamp { get; private set; }
         public TransactionType Type { get; private set; }
         public TransactionStatus Status { get; private set; }
-        public string ErrorMessage { get; private set; }
+        public string? ErrorMessage { get; private set; }
+
+        protected Transaction() { }
 
         public Transaction(string? fromAccountNumber, string? toAccountNumber, decimal amount, TransactionType type)
         {

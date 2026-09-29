@@ -45,11 +45,11 @@ namespace OOP_NoSQL.ConsoleApp
             CheckingAccount? checking = existingAccount.OfType<CheckingAccount>().FirstOrDefault();
             SavingsAccount? savings = existingAccount.OfType<SavingsAccount>().FirstOrDefault();
 
-            if (checking == null && savings == null)
+            if (!existingAccount.Any())
             {
                 Console.WriteLine("\nNo Active Accounts. Let's Create The First Account");
                 Console.ReadLine();
-                var created = await Handler.CreateAccountsAsync(user);
+                await Handler.CreateAccountsAsync(user);
             }
             
 

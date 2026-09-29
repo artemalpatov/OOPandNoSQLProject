@@ -53,8 +53,9 @@ namespace OOP_NoSQL.Infrastructure
             }
             catch (Exception ex)
             {
-                transaction.MarkAsFailed(ex.Message);
-                await _auditLogger.LogErrorAsync("DEPOSIT", ex.Message);
+                string detailedError = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                transaction.MarkAsFailed(detailedError);
+                await _auditLogger.LogErrorAsync("DEPOSIT", detailedError);
                 return transaction;
             }
         }
@@ -100,8 +101,9 @@ namespace OOP_NoSQL.Infrastructure
             }
             catch (Exception ex)
             {
-                transaction.MarkAsFailed(ex.Message);
-                await _auditLogger.LogErrorAsync("WITHDRAWAL", ex.Message);
+                string detailedError = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                transaction.MarkAsFailed(detailedError);
+                await _auditLogger.LogErrorAsync("WITHDRAWAL", detailedError);
                 return transaction;
             }
 
@@ -158,8 +160,9 @@ namespace OOP_NoSQL.Infrastructure
             }
             catch (Exception ex)
             {
-                transaction.MarkAsFailed(ex.Message);
-                await _auditLogger.LogErrorAsync("TRANSFER", ex.Message);
+                string detailedError = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                transaction.MarkAsFailed(detailedError);
+                await _auditLogger.LogErrorAsync("TRANSFER", detailedError);
                 return transaction;
             }
         }

@@ -12,6 +12,7 @@ namespace OOP_NoSQL.ConsoleApp
     {
         private static async Task Main(string[] args)
         {
+
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             Console.Title = "Banking System";
 
@@ -51,7 +52,6 @@ namespace OOP_NoSQL.ConsoleApp
                 Console.ReadLine();
                 await Handler.CreateAccountsAsync(user);
             }
-            
 
             while (true)
             {
